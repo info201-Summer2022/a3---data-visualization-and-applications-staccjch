@@ -1,0 +1,195 @@
+---
+title: "Index"
+author: "Jian Che"
+date: "8/5/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+### *Problem of Domain & Description of variables*
+
+For this dataset I want to look at the trend of prison population in each state
+and their proportion of the country. I also want to explore the racial disparities
+in prison, which race is being admitted into prison more, and whether this 
+disparity lowered or increased in recent years. Where the imprisonment occured
+also relate to racial disparities since many suburban areas are largely gentrified.
+I want to look at which area have a higher imprisonment number and if there
+is a common similarity among all states.
+```{r include=FALSE}
+# load libraries
+library(stringr)
+library(dplyr)
+library(ggplot2)
+# library(tidyverse)
+library(hrbrthemes)
+library(viridis)
+setwd('~/info201/a3---data-visualization-and-applications-staccjch/incarceration-trends')
+
+# Load datasets
+jailpop_year_df <- read.csv('year-end-prison-2021.csv')
+incar_trend_df <- read.csv('incarceration_trends.csv')
+```
+
+### *Summary Values*
+
+* State with Highest Prison Population 2019-2021: Texas
+  + Texas 2019: 158820
+  + Texas 2020: 136302
+  + Texas 2021: 133424
+* State with the MOST Population Change:
+  + Alaska: 159
+* State with the LEAST Population Change:
+  + Texas: -25329
+* Which state has the highest Black adult imprisonment in 2018?
+  + Texas: 2439277
+* Which state has the highest Latin adult imprisonment in 2018? 
+  + California: 10477829
+* hich state has the highest female adult imprisonment in 2018? 
+  + California: 13092077
+
+
+```{r include=FALSE}
+# Which state has the highest jail population each year?
+jail_pop_by_state <- jailpop_year_df[8:57, 2:5]
+max_2019_state <- jail_pop_by_state[jail_pop_by_state$total_prison_pop_2019
+                                   == max(jail_pop_by_state$total_prison_pop_2019), 
+                                   'state_name', drop = FALSE]
+max_2020_state <- jail_pop_by_state[jail_pop_by_state$total_prison_pop_2020
+                                   == max(jail_pop_by_state$total_prison_pop_2020), 
+                                   'state_name', drop = FALSE]
+max_2021_state <- jail_pop_by_state[jail_pop_by_state$total_prison_pop_2021
+                                    == max(jail_pop_by_state$total_prison_pop_2021), 
+                                    'state_name', drop = FALSE]
+# All Texas
+# Which state has the max difference from 2019-2021
+jail_pop_by_state <- jail_pop_by_state %>%
+  mutate(pop_growth = total_prison_pop_2021 - total_prison_pop_2019)
+
+max_growth <- jail_pop_by_state[jail_pop_by_state$pop_growth
+                                    == max(jail_pop_by_state$pop_growth), 
+                                    'state_name', drop = FALSE]
+print(max_growth)  # Alaska = 159
+
+min_growth <- jail_pop_by_state[jail_pop_by_state$pop_growth
+                                == min(jail_pop_by_state$pop_growth), 
+                                'state_name', drop = FALSE]
+print(min_growth) # Texas = -25369
+
+# Information in 2018
+incar_trend_2018 <- incar_trend_df %>%
+  filter(year == 2018) %>%
+  select(state, total_pop:male_pop_15to64, aapi_pop_15to64:white_pop_15to64) %>%
+  group_by(state) %>%
+  summarise_each(funs(sum))
+# Which state has the highest Black adult imprisonment in 2018? Texas = 2439277
+max_black_2018 <- incar_trend_2018[incar_trend_2018$black_pop_15to64
+                                   == max(incar_trend_2018$black_pop_15to64), 
+                                   'state', drop = FALSE]
+
+# Which state has the highest Latin adult imprisonment in 2018? CA = 10477829
+max_Latin_2018 <- incar_trend_2018[incar_trend_2018$latinx_pop_15to64
+                                   == max(incar_trend_2018$latinx_pop_15to64), 
+                                   'state', drop = FALSE]
+# Which state has the highest female adult imprisonment in 2018? CA = 13092077
+max_female_2018 <- incar_trend_2018[incar_trend_2018$female_pop_15to64
+                                   == max(incar_trend_2018$female_pop_15to64), 
+                                   'state', drop = FALSE]
+```
+
+## Trends over time chart
+I included the chart of top 10 Black Imprisonment States's incarceration trend from 1990 to 2018. This chart illustrated a high amount of incarceration trend on Black, showing trend of racism. While some States have lowered their Black incarceration rate over time, like New York and Illinois, other States like Texas and California, Florida rised over time. 
+
+```{r echo=FALSE}
+# library(hrbrthemes)
+# library(viridis)
+# Trend over time chart: top 10 states Black imprisonment population over 1990-2018
+# First get top 10 states names
+top_10_black_prison <- incar_trend_2018 %>%
+  select(state, black_pop_15to64) %>%
+  arrange(desc(black_pop_15to64)) %>%
+  slice(1:10)
+top_10_black_vector <- top_10_black_prison $state
+print(top_10_black_vector)
+# filter out top 10 Black imprisonment states' data
+black_trend_df <- incar_trend_df %>%
+  filter(year%in% 1990:2018) %>%
+  select(state, year, county_name, black_pop_15to64)
+black_trend_df <- black_trend_df[black_trend_df$state %in% top_10_black_vector, ]
+# get the sum of all counties
+Black <- aggregate(black_pop_15to64~state+year, data = black_trend_df, FUN = sum)
+
+# Plot
+Black %>%
+  ggplot( aes(x=year, y=black_pop_15to64, group=state, color=state)) +
+  geom_line() +
+  scale_color_viridis(discrete = TRUE) +
+  ggtitle("Top 10 Black Imprisonment States Incarceration Trend") +
+  theme_ipsum() +
+  ylab("Black imprisonment population")
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+## Varaible Comparison chart
+My variable comparison chart showed the relevance between Black imprisonment population and jail rate capacity. The graph showed a general positive linear correlation between jail rate capacity 
+and Black prisoner population. However, there are also a clump of scatterpoints at the low end of 
+jail rate capacity, indicating that even the smaller jails have a exceedingly high proportion of
+black prisoners. This shows racial disparities because Black prisoners take up a lot of the jail's 
+capacity regardless of jail sizes. 
+```{r include=FALSE}
+# Variable Comparison Chart: Relationship between jail rated capacity and black admissions rate
+
+# # plotly Plot
+library(reshape2)
+library(plotly)
+library(tidymodels)
+# library(hrbrthemes)
+# library(viridis)
+```
+```{r echo=FALSE}
+jail_capacity_df <- incar_trend_df %>%
+  select(year, state, black_prison_pop, jail_rated_capacity) %>%
+  na.omit()
+x <- jail_capacity_df$jail_rated_capacity
+y <- jail_capacity_df$black_prison_pop
+
+lm_model <- linear_reg() %>%
+  set_engine('lm') %>%
+  set_mode('regression') %>%
+  fit(jail_rated_capacity ~ black_prison_pop, data = jail_capacity_df) 
+
+fit <- lm(jail_rated_capacity ~ black_prison_pop, data = jail_capacity_df)
+
+jail_capacity_df %>%
+  plot_ly(x = ~jail_rated_capacity) %>%
+  add_markers( y = ~black_prison_pop) 
+  # %>% add_lines(x = ~jail_rated_capacity, y = fitted(fit))
+
+admissions <- incar_trend_df %>%
+  select(year, state, fips, county_name, total_prison_adm) %>%
+  na.omit()
+admissions_2016 <- admissions %>% filter(year == 2016)
+#admissions <- aggregate(total_prison_adm~state+year, data = admissions, FUN = sum)
+```
+
+
+## Map
+My map showed the total prison admissions population in 2016 in each US counties. Through this map, we can see which State and County have higher imprisonment rate, which might also implies the crime rate trend of the country in general.It shows racial disparities such that counties with high 
+prison admissions rate are also less gentrified. 
+```{r echo=FALSE}
+library(usmap)
+# library(hrbrthemes)
+# library(viridis)
+# library(ggplot2)
+plot_usmap(data = admissions_2016, values = 'total_prison_adm', color = 'grey') +
+  scale_fill_continuous(low = 'lightblue2', high = 'navy', name = 'prison admission(2016)', 
+                        label = scales::comma) +
+  labs(title = 'Counties Prison Admissions', subtitle = 'This map shows prison admission in 2016') +
+  theme(legend.position = "right")
+```
