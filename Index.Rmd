@@ -28,11 +28,11 @@ library(ggplot2)
 # library(tidyverse)
 library(hrbrthemes)
 library(viridis)
-setwd('~/info201/a3---data-visualization-and-applications-staccjch/incarceration-trends')
+setwd('~/info201/a3---data-visualization-and-applications-staccjch')
 
 # Load datasets
-jailpop_year_df <- read.csv('year-end-prison-2021.csv')
-incar_trend_df <- read.csv('incarceration_trends.csv')
+jailpop_year_df <- read.csv('data/year-end-prison-2021.csv')
+incar_trend_df <- read.csv('data/incarceration_trends.csv')
 ```
 
 ### *Summary Values*
