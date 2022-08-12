@@ -9,7 +9,7 @@ library(ggplot2)
 library(tidyverse)
 library(hrbrthemes)
 library(viridis)
-setwd('~/info201/a3---data-visualization-and-applications-staccjch/incarceration-trends')
+setwd('~/info201/a3---data-visualization-and-applications-staccjch/data')
 
 # Load datasets
 jailpop_year_df <- read.csv('year-end-prison-2021.csv')
